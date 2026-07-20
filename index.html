@@ -1,0 +1,237 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central de herramientas</title>
+<style>
+  :root{
+    --tinta:#12161c;
+    --tinta-2:#1b2129;
+    --papel:#e8e6e1;
+    --humo:#8d949e;
+    --senal:#ffd400;
+    --verde:#4ec98a;
+    --ambar:#ff9f43;
+    --linea:#2b323c;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--tinta);color:var(--papel);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+    line-height:1.5;
+  }
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+  header{
+    border-bottom:1px solid var(--linea);padding:28px 20px 22px;
+    max-width:940px;margin:0 auto;
+  }
+  .kicker{
+    font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--senal);margin:0 0 10px;
+  }
+  h1{font-size:clamp(28px,5vw,42px);margin:0 0 6px;font-weight:650;letter-spacing:-.02em}
+  .sub{color:var(--humo);margin:0;font-size:15px;max-width:52ch}
+  main{max-width:940px;margin:0 auto;padding:22px 20px 80px}
+  .buscador{position:relative;margin-bottom:8px}
+  input{
+    width:100%;padding:16px 16px 16px 44px;font-size:17px;
+    background:var(--tinta-2);border:1px solid var(--linea);border-radius:10px;
+    color:var(--papel);font-family:inherit;
+  }
+  input:focus{outline:2px solid var(--senal);outline-offset:1px;border-color:transparent}
+  .lupa{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--humo)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 26px}
+  .chip{
+    background:none;border:1px solid var(--linea);color:var(--humo);
+    padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer;font-family:inherit;
+  }
+  .chip:hover{border-color:var(--humo);color:var(--papel)}
+  .chip[aria-pressed="true"]{background:var(--senal);color:#12161c;border-color:var(--senal);font-weight:600}
+  .conteo{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--humo);margin:0 0 12px}
+  .ficha{
+    border:1px solid var(--linea);border-radius:12px;padding:18px;margin-bottom:12px;
+    background:var(--tinta-2);
+  }
+  .ficha h2{margin:0 0 4px;font-size:18px;font-weight:600}
+  .ficha p{margin:6px 0 0;color:var(--humo);font-size:14px}
+  .veredicto{
+    display:inline-flex;align-items:center;gap:7px;font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;font-family:ui-monospace,monospace;margin-bottom:10px;
+  }
+  .punto{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .directa .punto{background:var(--verde)} .directa{color:var(--verde)}
+  .mixta .punto{background:var(--ambar)} .mixta{color:var(--ambar)}
+  .herramientas{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .herramientas a{
+    display:inline-block;padding:7px 12px;border:1px solid var(--linea);border-radius:8px;
+    color:var(--papel);text-decoration:none;font-size:14px;
+  }
+  .herramientas a:hover{border-color:var(--senal);color:var(--senal)}
+  .herramientas a span{color:var(--humo);font-size:12px;margin-left:6px}
+  .vacio{border:1px dashed var(--linea);border-radius:12px;padding:32px;text-align:center;color:var(--humo)}
+  .vacio strong{color:var(--papel);display:block;margin-bottom:6px}
+  footer{border-top:1px solid var(--linea);margin-top:36px;padding-top:18px;font-size:13px;color:var(--humo)}
+  a{color:inherit}
+</style>
+
+<header>
+  <p class="kicker">La Biznaga Digital · uso interno</p>
+  <h1>Central de herramientas</h1>
+  <p class="sub">Escribe la tarea que tienes delante. Te decimos con qué resolverla antes de abrir Claude.</p>
+</header>
+
+<main>
+  <div class="buscador">
+    <span class="lupa mono">⌕</span>
+    <input id="q" type="search" placeholder="Ej: minificar javascript, wireframe, quitar fondo de imagen…" autocomplete="off">
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <p class="conteo mono" id="conteo"></p>
+  <div id="lista"></div>
+
+  <footer>
+    <span class="veredicto directa"><span class="punto"></span>Resuelto con herramienta</span> · usa el enlace y cierra el tema.<br>
+    <span class="veredicto mixta"><span class="punto"></span>Claude aporta</span> · la herramienta hace el trabajo bruto; Claude, el criterio.
+  </footer>
+</main>
+
+<script>
+const CATALOGO = [
+  {t:"Minificar o formatear JavaScript / CSS", c:"Código", v:"directa",
+   k:"minificar minify comprimir js css uglify beautify formatear prettier",
+   n:"Pegar y copiar. No hace falta ningún modelo.",
+   h:[["Minify JS","https://minify-js.com/"],["Prettier Playground","https://prettier.io/playground/"],["CSS Minifier","https://www.toptal.com/developers/cssminifier"]]},
+
+  {t:"Construir un wireframe o prototipo de web", c:"Diseño", v:"mixta",
+   k:"wireframe prototipo maqueta mockup landing prototipar figma diseño web",
+   n:"Genera el prototipo en la herramienta; usa Claude solo para el copy o la estructura de contenido.",
+   h:[["Lovable","https://lovable.dev/"],["Figma","https://www.figma.com/"],["v0","https://v0.app/"],["Excalidraw","https://excalidraw.com/"]]},
+
+  {t:"Quitar el fondo de una imagen / editar imágenes", c:"Diseño", v:"directa",
+   k:"fondo imagen foto recortar quitar background remove editar png transparente upscale",
+   n:"Un clic en la herramienta. Claude no edita imágenes.",
+   h:[["remove.bg","https://www.remove.bg/"],["Photopea","https://www.photopea.com/"],["Squoosh","https://squoosh.app/"]]},
+
+  {t:"Comprimir o convertir PDF, imágenes y vídeo", c:"Ficheros", v:"directa",
+   k:"pdf comprimir convertir unir dividir jpg webp mp4 formato archivo peso",
+   n:"Conversión mecánica: herramienta.",
+   h:[["iLovePDF","https://www.ilovepdf.com/"],["CloudConvert","https://cloudconvert.com/"],["Squoosh","https://squoosh.app/"]]},
+
+  {t:"Auditoría técnica o crawl de un sitio", c:"SEO", v:"mixta",
+   k:"crawl auditoria tecnica screaming frog rastreo errores 404 redirecciones indexacion sitemap",
+   n:"El crawler saca los datos. Claude sirve para priorizar e interpretar, no para rastrear.",
+   h:[["Screaming Frog","https://www.screamingfrog.co.uk/seo-spider/"],["Search Console","https://search.google.com/search-console"],["Sitebulb","https://sitebulb.com/"]]},
+
+  {t:"Investigación de palabras clave y volúmenes", c:"SEO", v:"directa",
+   k:"keywords palabras clave volumen busqueda kw research semrush ahrefs dificultad",
+   n:"Necesitas datos reales de volumen: Claude no los tiene.",
+   h:[["Ahrefs","https://ahrefs.com/keywords-explorer"],["Semrush","https://www.semrush.com/"],["Keyword Planner","https://ads.google.com/aw/keywordplanner/home"],["Google Trends","https://trends.google.com/"]]},
+
+  {t:"Medir velocidad y Core Web Vitals", c:"SEO", v:"directa",
+   k:"velocidad rendimiento pagespeed core web vitals lcp cls lighthouse wpo carga",
+   n:"Medición automática con recomendaciones incluidas.",
+   h:[["PageSpeed Insights","https://pagespeed.web.dev/"],["WebPageTest","https://www.webpagetest.org/"],["GTmetrix","https://gtmetrix.com/"]]},
+
+  {t:"Validar HTML, schema o datos estructurados", c:"SEO", v:"directa",
+   k:"schema datos estructurados rich results validar html markup json-ld hreflang robots",
+   n:"Los validadores oficiales son la fuente de verdad.",
+   h:[["Rich Results Test","https://search.google.com/test/rich-results"],["Schema Validator","https://validator.schema.org/"],["W3C Validator","https://validator.w3.org/"]]},
+
+  {t:"Buscar y reemplazar en masa / limpiar listados de URLs", c:"Datos", v:"directa",
+   k:"regex expresion regular buscar reemplazar limpiar urls listado texto duplicados csv excel",
+   n:"Hoja de cálculo o editor de texto. Más rápido y sin errores de transcripción.",
+   h:[["Regex101","https://regex101.com/"],["Text Mechanic","https://textmechanic.com/"],["Google Sheets","https://sheets.google.com/"]]},
+
+  {t:"Cálculos, tablas dinámicas y gráficos de datos", c:"Datos", v:"mixta",
+   k:"calculo excel sheets tabla dinamica grafico dashboard datos informe metricas looker",
+   n:"Monta el cálculo en la hoja. Claude, solo para explicar la fórmula o redactar conclusiones.",
+   h:[["Google Sheets","https://sheets.google.com/"],["Looker Studio","https://lookerstudio.google.com/"]]},
+
+  {t:"Traducir un texto", c:"Contenido", v:"directa",
+   k:"traducir traduccion ingles idioma translate",
+   n:"Traducción directa: traductor. Claude solo si hay que adaptar tono o localizar.",
+   h:[["DeepL","https://www.deepl.com/translator"],["Google Translate","https://translate.google.com/"]]},
+
+  {t:"Corregir ortografía y gramática", c:"Contenido", v:"directa",
+   k:"ortografia gramatica corregir revisar texto tildes redaccion errores",
+   n:"Corrector automático. Reserva Claude para reescrituras de fondo.",
+   h:[["LanguageTool","https://languagetool.org/es"],["Corrector RAE","https://www.rae.es/"]]},
+
+  {t:"Redactar contenido largo con criterio editorial", c:"Contenido", v:"mixta",
+   k:"redactar articulo blog post texto contenido copy brief guion email cliente",
+   n:"Aquí Claude sí es la herramienta adecuada. Lleva el brief y los datos ya recopilados.",
+   h:[["Claude","https://claude.ai/"]]},
+
+  {t:"Buscar un dato puntual, precio o fecha", c:"Básico", v:"directa",
+   k:"dato precio fecha quien cuando definicion consultar informacion buscar google saber",
+   n:"Una búsqueda. Si el dato cambia con el tiempo, la búsqueda es más fiable.",
+   h:[["Google","https://www.google.com/"]]},
+
+  {t:"Generar contraseñas, UUID, lorem ipsum o QR", c:"Básico", v:"directa",
+   k:"contraseña password uuid lorem ipsum qr generador hash placeholder random",
+   n:"Generadores instantáneos.",
+   h:[["1Password Generator","https://1password.com/password-generator/"],["Lorem Ipsum","https://www.lipsum.com/"],["QR Code Monkey","https://www.qrcode-monkey.com/"]]},
+
+  {t:"Depurar un error de código concreto", c:"Código", v:"mixta",
+   k:"error bug depurar debug codigo javascript python no funciona consola stacktrace",
+   n:"Busca el mensaje de error literal primero. Si no aparece en 5 minutos, pasa a Claude con el stack completo.",
+   h:[["Búsqueda del error","https://www.google.com/"],["Stack Overflow","https://stackoverflow.com/"],["Claude","https://claude.ai/"]]},
+
+  {t:"Comparar dos textos o versiones de un fichero", c:"Código", v:"directa",
+   k:"comparar diff versiones cambios texto fichero diferencias",
+   n:"Un diff visual lo resuelve en segundos.",
+   h:[["Diffchecker","https://www.diffchecker.com/"]]},
+
+  {t:"Planificar, resumir reuniones o coordinar tareas", c:"Gestión", v:"mixta",
+   k:"reunion acta resumen planificar tareas proyecto calendario coordinar seguimiento",
+   n:"El gestor de tareas guarda el estado; Claude solo para sintetizar notas largas.",
+   h:[["Asana","https://asana.com/"],["Notion","https://www.notion.so/"],["Google Calendar","https://calendar.google.com/"]]}
+];
+
+const lista = document.getElementById('lista');
+const conteo = document.getElementById('conteo');
+const q = document.getElementById('q');
+const chips = document.getElementById('chips');
+let filtro = null;
+
+const cats = [...new Set(CATALOGO.map(x => x.c))];
+cats.forEach(c => {
+  const b = document.createElement('button');
+  b.className = 'chip'; b.textContent = c; b.setAttribute('aria-pressed','false');
+  b.onclick = () => { filtro = (filtro === c) ? null : c; pintar(); };
+  chips.appendChild(b);
+});
+
+function norm(s){ return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+
+function pintar(){
+  const term = norm(q.value.trim());
+  const palabras = term ? term.split(/\s+/) : [];
+  let res = CATALOGO.filter(x => {
+    if (filtro && x.c !== filtro) return false;
+    if (!palabras.length) return true;
+    const blob = norm(x.t + ' ' + x.k + ' ' + x.c + ' ' + x.n);
+    return palabras.every(p => blob.includes(p));
+  });
+
+  [...chips.children].forEach(b => b.setAttribute('aria-pressed', String(b.textContent === filtro)));
+  conteo.textContent = res.length + (res.length === 1 ? ' resultado' : ' resultados');
+
+  if (!res.length){
+    lista.innerHTML = '<div class="vacio"><strong>Sin coincidencias</strong>Prueba con otra palabra. Si la tarea no está aquí, dísela a Alicia y la añadimos.</div>';
+    return;
+  }
+
+  lista.innerHTML = res.map(x => `
+    <article class="ficha">
+      <div class="veredicto ${x.v}"><span class="punto"></span>${x.v === 'directa' ? 'Resuelto con herramienta' : 'Claude aporta'}</div>
+      <h2>${x.t}</h2>
+      <p>${x.n}</p>
+      <div class="herramientas">
+        ${x.h.map(([n,u]) => `<a href="${u}" target="_blank" rel="noopener">${n}<span>↗</span></a>`).join('')}
+      </div>
+    </article>`).join('');
+}
+
+q.addEventListener('input', pintar);
+pintar();
+</script>
